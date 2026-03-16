@@ -4,17 +4,16 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.Networking;
 
-// ============================================================
-//  AuthHandler.cs  –  Registro, Login, Logout, Scores
-//  Autor: [TU NOMBRE COMPLETO AQUÍ]
-// ============================================================
-
 public class AuthHandler : MonoBehaviour
 {
     private string Token;
     private string Username;
 
     private const string ApiUrl = "https://sid-restapi.onrender.com";
+
+    // ── Panel Menu ───────────────────────────────────────────
+    [Header("Panel Menu")]
+    [SerializeField] private GameObject panelMenu;
 
     // ── Panel Login ──────────────────────────────────────────
     [Header("Panel Login")]
@@ -33,25 +32,22 @@ public class AuthHandler : MonoBehaviour
     // ── Panel Main ───────────────────────────────────────────
     [Header("Panel Main")]
     [SerializeField] private GameObject panelMain;
-    [SerializeField] private TMP_Text welcomeLabel;   // "Bienvenido, usuario"
+    [SerializeField] private TMP_Text welcomeLabel;
 
     // ── Panel Scores ─────────────────────────────────────────
     [Header("Panel Scores")]
     [SerializeField] private GameObject panelScores;
-    [SerializeField] private Transform scoresContainer;  // Vertical Layout Group vacío
-    [SerializeField] private GameObject scoreRowPrefab;  // Prefab: dos TMP_Text hijos
+    [SerializeField] private Transform scoresContainer;
+    [SerializeField] private GameObject scoreRowPrefab;
 
-    // ── UI General (siempre visible) ─────────────────────────
-    [Header("UI General")]
-    [SerializeField] private TMP_Text authorLabel;  // Tu nombre, siempre visible
-
-    // ════════════════════════════════════════════════════════
-    //  START
-    // ════════════════════════════════════════════════════════
     private void Start()
     {
-        if (authorLabel != null)
-            authorLabel.text = "Desarrollado por: [TU NOMBRE COMPLETO]";
+        // Apagar todo al inicio
+        if (panelMenu != null) panelMenu.SetActive(false);
+        panelLogin.SetActive(false);
+        panelRegister.SetActive(false);
+        panelMain.SetActive(false);
+        if (panelScores != null) panelScores.SetActive(false);
 
         SetError(loginErrorText, "");
         SetError(registerErrorText, "");
@@ -65,13 +61,10 @@ public class AuthHandler : MonoBehaviour
         }
         else
         {
-            ShowPanel(panelLogin);
+            ShowPanel(panelMenu);
         }
     }
 
-    // ════════════════════════════════════════════════════════
-    //  VERIFICACIÓN DE TOKEN
-    // ════════════════════════════════════════════════════════
     private IEnumerator VerifyToken()
     {
         UnityWebRequest www = UnityWebRequest.Get(ApiUrl + "/api/usuarios/" + Username);
@@ -92,9 +85,6 @@ public class AuthHandler : MonoBehaviour
         }
     }
 
-    // ════════════════════════════════════════════════════════
-    //  REGISTRO
-    // ════════════════════════════════════════════════════════
     public void RegisterButtonHandler()
     {
         SetError(registerErrorText, "");
@@ -121,7 +111,6 @@ public class AuthHandler : MonoBehaviour
 
         if (www.result == UnityWebRequest.Result.Success)
         {
-            // Pasar al login con los campos ya rellenos
             loginUsernameInput.text = username;
             loginPasswordInput.text = password;
             SetError(loginErrorText, "✔ Cuenta creada. Inicia sesión.");
@@ -134,9 +123,6 @@ public class AuthHandler : MonoBehaviour
         }
     }
 
-    // ════════════════════════════════════════════════════════
-    //  LOGIN
-    // ════════════════════════════════════════════════════════
     public void LoginButtonHandler()
     {
         SetError(loginErrorText, "");
@@ -180,14 +166,11 @@ public class AuthHandler : MonoBehaviour
         }
     }
 
-    // ════════════════════════════════════════════════════════
-    //  LOGOUT
-    // ════════════════════════════════════════════════════════
     public void LogoutButtonHandler()
     {
         ClearSession();
         if (welcomeLabel != null) welcomeLabel.text = "";
-        ShowPanel(panelLogin);
+        ShowPanel(panelMenu);
     }
 
     private void ClearSession()
@@ -199,14 +182,6 @@ public class AuthHandler : MonoBehaviour
         PlayerPrefs.Save();
     }
 
-    // ════════════════════════════════════════════════════════
-    //  ACTUALIZAR SCORE
-    // ════════════════════════════════════════════════════════
-
-    /// <summary>
-    /// Llama esto desde tu juego al terminar una partida:
-    ///   FindObjectOfType&lt;AuthHandler&gt;().SubmitScore(puntos);
-    /// </summary>
     public void SubmitScore(int score)
     {
         if (string.IsNullOrEmpty(Token))
@@ -234,9 +209,6 @@ public class AuthHandler : MonoBehaviour
             Debug.LogError("Error al actualizar score: " + www.downloadHandler.text);
     }
 
-    // ════════════════════════════════════════════════════════
-    //  TABLA DE SCORES
-    // ════════════════════════════════════════════════════════
     public void ShowScoresButtonHandler()
     {
         StartCoroutine(FetchScoresCoroutine());
@@ -263,15 +235,12 @@ public class AuthHandler : MonoBehaviour
             yield break;
         }
 
-        // Ordenar de mayor a menor score
         List<UserScore> sorted = new List<UserScore>(listResponse.usuarios);
         sorted.Sort((a, b) => b.score.CompareTo(a.score));
 
-        // Limpiar filas anteriores
         foreach (Transform child in scoresContainer)
             Destroy(child.gameObject);
 
-        // Crear una fila por usuario
         for (int i = 0; i < sorted.Count; i++)
         {
             GameObject row = Instantiate(scoreRowPrefab, scoresContainer);
@@ -292,9 +261,6 @@ public class AuthHandler : MonoBehaviour
         ShowPanel(panelMain);
     }
 
-    // ════════════════════════════════════════════════════════
-    //  NAVEGACIÓN LOGIN ↔ REGISTER
-    // ════════════════════════════════════════════════════════
     public void GoToRegisterButtonHandler()
     {
         SetError(registerErrorText, "");
@@ -307,13 +273,9 @@ public class AuthHandler : MonoBehaviour
         ShowPanel(panelLogin);
     }
 
-    // ════════════════════════════════════════════════════════
-    //  UTILIDADES PRIVADAS
-    // ════════════════════════════════════════════════════════
-
-    /// <summary>Apaga todos los paneles y enciende solo el indicado.</summary>
     private void ShowPanel(GameObject target)
     {
+        if (panelMenu != null) panelMenu.SetActive(false);
         panelLogin.SetActive(false);
         panelRegister.SetActive(false);
         panelMain.SetActive(false);
@@ -341,10 +303,6 @@ public class AuthHandler : MonoBehaviour
         catch { return null; }
     }
 }
-
-// ════════════════════════════════════════════════════════════
-//  MODELOS DE DATOS
-// ════════════════════════════════════════════════════════════
 
 [System.Serializable] public class AuthData { public string username; public string password; }
 [System.Serializable] public class RegisterData { public string username; public string password; }
