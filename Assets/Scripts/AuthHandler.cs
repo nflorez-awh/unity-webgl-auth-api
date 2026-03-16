@@ -287,7 +287,7 @@ public class AuthHandler : MonoBehaviour
     private void EnterGame()
     {
         if (welcomeLabel != null)
-            welcomeLabel.text = "Bienvenido, " + Username;
+            welcomeLabel.text = Username;
 
         ShowPanel(panelMain);
     }
